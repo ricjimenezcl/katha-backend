@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: katha-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_NAME
+        value: Katha Backend API
+      - key: CORS_ORIGINS
+        value: https://tu-frontend.onrender.com
+      - key: NOMINATIM_USER_AGENT
+        value: KathaEcommerce/1.0 (contacto@katha.cl)
+      # PostgreSQL en Render: configura DATABASE_URL como secreto en el panel.
+      # Formato: postgresql://USER:PASS@HOST:5432/dbkatha?sslmode=require
+      - key: DATABASE_URL
+        sync: false
+      - key: POSTGRES_SSL
+        value: "true"
+      # Fallback si no usas DATABASE_URL
+      - key: POSTGRES_DB
+        value: dbkatha
