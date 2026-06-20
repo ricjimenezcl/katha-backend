@@ -12,10 +12,16 @@ from .schemas import CheckoutPayload, GeocodingResponse, GeocodingResult, OrderC
 
 CACHE_TTL_MS = 5 * 60 * 1000
 _geocode_cache: dict[str, dict[str, Any]] = {}
+REVERSE_CACHE_TTL_MS = 10 * 60 * 1000
+_reverse_geocode_cache: dict[str, dict[str, Any]] = {}
 
 
 def _build_geocode_cache_key(q: str, country: str) -> str:
     return f"{q.strip().lower()}|{country.strip().lower()}"
+
+
+def _build_reverse_cache_key(lat: float, lon: float) -> str:
+    return f"{lat:.4f},{lon:.4f}"
 
 
 def _parse_nominatim_result(item: dict[str, Any]) -> GeocodingResult:
@@ -103,6 +109,58 @@ async def geocoding_search(
         _geocode_cache.pop(first_key, None)
 
     return GeocodingResponse(source="api", results=results)
+
+
+@app.get(
+    "/api/geocoding/reverse",
+    responses={502: {"description": "Fallo servicio de reverse geocoding"}},
+)
+async def geocoding_reverse(
+    lat: Annotated[float, Query()],
+    lon: Annotated[float, Query()],
+) -> dict[str, Any]:
+    cache_key = _build_reverse_cache_key(lat, lon)
+    cached = _reverse_geocode_cache.get(cache_key)
+    now = time.time() * 1000
+
+    if cached and (now - cached["ts"]) < REVERSE_CACHE_TTL_MS:
+        return cached["payload"]
+
+    url = "https://nominatim.openstreetmap.org/reverse"
+    params = {
+        "lat": str(lat),
+        "lon": str(lon),
+        "format": "jsonv2",
+        "addressdetails": "1",
+    }
+    headers = {
+        "Accept-Language": "es",
+        "User-Agent": settings.nominatim_user_agent,
+    }
+
+    async with httpx.AsyncClient(timeout=8.0) as client:
+        resp = await client.get(url, params=params, headers=headers)
+        if resp.status_code >= 400:
+            raise HTTPException(status_code=502, detail="Fallo servicio de reverse geocoding")
+        raw = resp.json() or {}
+
+    formatted = raw.get("display_name") or "Ubicación desconocida"
+    payload = {
+        "features": [
+            {
+                "properties": {
+                    "formatted": formatted,
+                }
+            }
+        ]
+    }
+
+    _reverse_geocode_cache[cache_key] = {"ts": now, "payload": payload}
+    if len(_reverse_geocode_cache) > 200:
+        first_key = next(iter(_reverse_geocode_cache.keys()))
+        _reverse_geocode_cache.pop(first_key, None)
+
+    return payload
 
 
 @app.get("/api/shipping-rates")

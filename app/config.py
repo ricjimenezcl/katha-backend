@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from urllib.parse import urlparse
 
 
 class Settings(BaseSettings):
@@ -28,9 +29,13 @@ class Settings(BaseSettings):
 
     @property
     def postgres_dsn(self) -> str:
-        if self.database_url:
+        db_url = (self.database_url or "").strip()
+        if db_url:
             # Compatibilidad: algunos providers entregan postgres:// en vez de postgresql://
-            return self.database_url.replace("postgres://", "postgresql://", 1)
+            normalized = db_url.replace("postgres://", "postgresql://", 1)
+            scheme = urlparse(normalized).scheme
+            if scheme in {"postgresql", "postgres"}:
+                return normalized
 
         ssl_mode = "require" if self.postgres_ssl else "disable"
         return (
