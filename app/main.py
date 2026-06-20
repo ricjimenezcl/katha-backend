@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import logging
 import time
 from typing import Annotated, Any
 
@@ -9,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import close_db_pool, get_db_pool, init_db_pool
 from .schemas import CheckoutPayload, GeocodingResponse, GeocodingResult, OrderCreated, ShippingRate
+
+logger = logging.getLogger(__name__)
 
 CACHE_TTL_MS = 5 * 60 * 1000
 _geocode_cache: dict[str, dict[str, Any]] = {}
@@ -95,11 +98,21 @@ async def geocoding_search(
         "User-Agent": settings.nominatim_user_agent,
     }
 
-    async with httpx.AsyncClient(timeout=8.0) as client:
-        resp = await client.get(url, params=params, headers=headers)
-        if resp.status_code >= 400:
-            raise HTTPException(status_code=502, detail="Fallo servicio de geocoding")
-        raw = resp.json() or []
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            resp = await client.get(url, params=params, headers=headers)
+            if resp.status_code >= 400:
+                raise httpx.HTTPStatusError(
+                    "geocoding provider error",
+                    request=resp.request,
+                    response=resp,
+                )
+            raw = resp.json() or []
+    except Exception as exc:
+        logger.warning("Geocoding provider failed, using fallback: %s", exc)
+        if cached:
+            return GeocodingResponse(source="cache-stale", results=cached["results"])
+        return GeocodingResponse(source="fallback", results=[])
 
     results = [_parse_nominatim_result(item) for item in raw]
     _geocode_cache[cache_key] = {"ts": now, "results": results}
@@ -138,11 +151,29 @@ async def geocoding_reverse(
         "User-Agent": settings.nominatim_user_agent,
     }
 
-    async with httpx.AsyncClient(timeout=8.0) as client:
-        resp = await client.get(url, params=params, headers=headers)
-        if resp.status_code >= 400:
-            raise HTTPException(status_code=502, detail="Fallo servicio de reverse geocoding")
-        raw = resp.json() or {}
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            resp = await client.get(url, params=params, headers=headers)
+            if resp.status_code >= 400:
+                raise httpx.HTTPStatusError(
+                    "reverse geocoding provider error",
+                    request=resp.request,
+                    response=resp,
+                )
+            raw = resp.json() or {}
+    except Exception as exc:
+        logger.warning("Reverse geocoding provider failed, using fallback: %s", exc)
+        if cached:
+            return cached["payload"]
+        return {
+            "features": [
+                {
+                    "properties": {
+                        "formatted": "Ubicación desconocida",
+                    }
+                }
+            ]
+        }
 
     formatted = raw.get("display_name") or "Ubicación desconocida"
     payload = {
