@@ -11,7 +11,7 @@ services:
       - key: APP_NAME
         value: Katha Backend API
       - key: CORS_ORIGINS
-        value: https://tu-frontend.onrender.com
+        value: https://tu-frontend.onrender.com,http://localhost:4200,http://localhost:3000
       - key: NOMINATIM_USER_AGENT
         value: KathaEcommerce/1.0 (contacto@katha.cl)
       # PostgreSQL en Render: configura DATABASE_URL como secreto en el panel.
