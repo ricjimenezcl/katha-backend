@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from urllib.parse import urlparse
 
@@ -22,6 +23,17 @@ class Settings(BaseSettings):
     postgres_ssl: bool = False
 
     render_external_url: str = ""
+
+    # JWT
+    jwt_secret_key: str = "changeme-very-secret-katha-2026"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_hours: int = 8
+
+    # Cloudinary
+    cloudinary_cloud_name: str = ""
+    cloudinary_api_key: str = ""
+    cloudinary_api_secret: str = ""
+    cloudinary_url: str = ""
 
     @property
     def cors_origins_list(self) -> list[str]:

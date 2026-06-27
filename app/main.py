@@ -1,3 +1,4 @@
+from __future__ import annotations
 from contextlib import asynccontextmanager
 import logging
 import time
@@ -10,6 +11,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import close_db_pool, get_db_pool, init_db_pool
 from .schemas import CheckoutPayload, GeocodingResponse, GeocodingResult, OrderCreated, ShippingRate
+from .routers import auth as auth_router
+from .routers import products as products_router
+from .routers import admin_orders as admin_orders_router
+from .routers import inventory as inventory_router
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +68,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router.router)
+app.include_router(products_router.router)
+app.include_router(admin_orders_router.router)
+app.include_router(inventory_router.router)
 
 
 @app.get("/api/health")
@@ -264,6 +274,20 @@ async def create_order(payload: CheckoutPayload) -> OrderCreated:
                     item.price,
                     item.quantity,
                     item.price * item.quantity,
+                )
+                # Decrementar stock
+                await conn.execute(
+                    "UPDATE products SET stock = GREATEST(stock - $1, 0), updated_at = NOW() WHERE id = $2",
+                    item.quantity,
+                    item.productId,
+                )
+                await conn.execute(
+                    """
+                    INSERT INTO inventory_movements (product_id, quantity_change, reason)
+                    VALUES ($1, $2, 'sale')
+                    """,
+                    item.productId,
+                    -item.quantity,
                 )
 
             tx_row = await conn.fetchrow(
