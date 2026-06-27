@@ -323,8 +323,10 @@ async def update_product(
     return _row_to_product(result)
 
 
-@router.delete("/api/admin/products/{product_id}", status_code=204)
-async def delete_product(product_id: int, _: dict = Depends(require_admin)) -> None:
+from fastapi.responses import Response
+
+@router.delete("/api/admin/products/{product_id}")
+async def delete_product(product_id: int, _: dict = Depends(require_admin)) -> Response:
     pool = get_db_pool()
     row = await pool.fetchrow(
         "SELECT cloudinary_public_id FROM products WHERE id = $1", product_id
@@ -341,6 +343,7 @@ async def delete_product(product_id: int, _: dict = Depends(require_admin)) -> N
             pass  # No bloquear el borrado del producto si Cloudinary falla
 
     await pool.execute("DELETE FROM products WHERE id = $1", product_id)
+    return Response(status_code=204)
 
 
 @router.patch("/api/admin/products/{product_id}/stock", response_model=ProductResponse)
