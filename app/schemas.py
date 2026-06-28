@@ -106,6 +106,40 @@ class CategoryResponse(BaseModel):
     sort_order: int = 0
 
 
+class TallerResponse(BaseModel):
+    id: int
+    titulo: str
+    descripcion: str
+    horas: str
+    nivel: str
+    detalle: str
+    icono: str
+    sort_order: int
+    active: bool
+
+
+class TallerCreate(BaseModel):
+    titulo: str
+    descripcion: str
+    horas: str
+    nivel: str
+    detalle: str
+    icono: str = ""
+    sort_order: int = 0
+    active: bool = True
+
+
+class TallerUpdate(BaseModel):
+    titulo: str | None = None
+    descripcion: str | None = None
+    horas: str | None = None
+    nivel: str | None = None
+    detalle: str | None = None
+    icono: str | None = None
+    sort_order: int | None = None
+    active: bool | None = None
+
+
 class ProductResponse(BaseModel):
     id: int
     name: str
