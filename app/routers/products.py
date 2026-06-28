@@ -11,6 +11,7 @@ from ..auth_utils import require_admin
 from ..config import settings
 from ..db import get_db_pool
 from ..schemas import (
+    CategoryResponse,
     ImageUploadResponse,
     ProductCreate,
     ProductListResponse,
@@ -37,6 +38,7 @@ def _row_to_product(row: dict) -> ProductResponse:
     return ProductResponse(
         id=row["id"],
         name=row["name"],
+        material=row.get("material"),
         description=row.get("energy_description"),
         price=row["price"],
         category=row.get("category") or "",
@@ -90,7 +92,7 @@ async def list_products_public(
     params += [limit, offset]
     rows = await pool.fetch(
         f"""
-        SELECT p.id, p.name, p.energy_description, p.price, p.tag,
+        SELECT p.id, p.name, p.material, p.energy_description, p.price, p.tag,
                p.img_url, p.cloudinary_public_id, p.stock, p.active,
                p.created_at, p.updated_at,
                c.slug AS category
@@ -115,7 +117,7 @@ async def get_product_public(product_id: int) -> ProductResponse:
     pool = get_db_pool()
     row = await pool.fetchrow(
         """
-        SELECT p.id, p.name, p.energy_description, p.price, p.tag,
+        SELECT p.id, p.name, p.material, p.energy_description, p.price, p.tag,
                p.img_url, p.cloudinary_public_id, p.stock, p.active,
                p.created_at, p.updated_at,
                c.slug AS category
@@ -128,6 +130,15 @@ async def get_product_public(product_id: int) -> ProductResponse:
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
     return _row_to_product(dict(row))
+
+
+@router.get("/api/categories", response_model=list[CategoryResponse])
+async def list_categories() -> list[CategoryResponse]:
+    pool = get_db_pool()
+    rows = await pool.fetch(
+        "SELECT id, slug, name, sort_order FROM categories ORDER BY sort_order"
+    )
+    return [CategoryResponse(id=r["id"], slug=r["slug"], name=r["name"], sort_order=r["sort_order"]) for r in rows]
 
 
 # ── Admin ──────────────────────────────────────────────────────────────────

@@ -99,9 +99,17 @@ class ProductUpdate(BaseModel):
     tag: str | None = None
 
 
+class CategoryResponse(BaseModel):
+    id: int
+    slug: str
+    name: str
+    sort_order: int = 0
+
+
 class ProductResponse(BaseModel):
     id: int
     name: str
+    material: str | None
     description: str | None
     price: int
     category: str
