@@ -121,6 +121,7 @@ class TallerResponse(BaseModel):
     nivel: str
     detalle: str
     icono: str
+    img_url: str | None = None
     sort_order: int
     active: bool
 
@@ -132,6 +133,7 @@ class TallerCreate(BaseModel):
     nivel: str
     detalle: str
     icono: str = ""
+    img_url: str | None = None
     sort_order: int = 0
     active: bool = True
 
@@ -143,6 +145,7 @@ class TallerUpdate(BaseModel):
     nivel: str | None = None
     detalle: str | None = None
     icono: str | None = None
+    img_url: str | None = None
     sort_order: int | None = None
     active: bool | None = None
 
