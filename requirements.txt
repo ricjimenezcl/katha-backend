@@ -9,4 +9,4 @@ python-jose[cryptography]==3.3.0
 cloudinary==1.44.2
 python-multipart==0.0.12
 eval_type_backport==0.2.0
-transbank-sdk==6.1.0
+
