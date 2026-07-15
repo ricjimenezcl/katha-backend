@@ -35,6 +35,14 @@ class Settings(BaseSettings):
     cloudinary_api_secret: str = ""
     cloudinary_url: str = ""
 
+    # Transbank Webpay Plus
+    transbank_commerce_code: str = "597055555532"  # Código de integración por defecto
+    transbank_api_key: str = "579B532A7440BB0116B0A3D54BF3B38E"  # Clave de integración
+    transbank_environment: str = "integration"  # "integration" | "production"
+
+    # URL pública del frontend (para redirigir tras el pago)
+    frontend_url: str = "https://arteyartesaniakatha.cl"
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [x.strip() for x in self.cors_origins.split(",") if x.strip()]

@@ -47,11 +47,18 @@ class CheckoutPayload(BaseModel):
     items: list[CartItemPayload]
     shippingAddress: ShippingAddressPayload
     paymentMethod: str
+    guestEmail: str | None = None
 
 
 class OrderCreated(BaseModel):
     orderId: int
     transactionId: int
+
+
+class TransbankInitResponse(BaseModel):
+    url: str
+    token: str
+    orderId: int
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────

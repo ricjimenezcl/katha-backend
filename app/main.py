@@ -16,6 +16,7 @@ from .routers import products as products_router
 from .routers import admin_orders as admin_orders_router
 from .routers import inventory as inventory_router
 from .routers import talleres as talleres_router
+from .routers import payment as payment_router
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,7 @@ app.include_router(products_router.router)
 app.include_router(admin_orders_router.router)
 app.include_router(inventory_router.router)
 app.include_router(talleres_router.router)
+app.include_router(payment_router.router)
 
 
 @app.get("/api/health")
