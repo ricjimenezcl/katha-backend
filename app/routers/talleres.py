@@ -131,7 +131,7 @@ async def update_taller(
     return _row_to_taller(dict(row))
 
 
-@router.delete("/api/admin/talleres/{taller_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/api/admin/talleres/{taller_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_taller(taller_id: int, _: dict = Depends(require_admin)) -> None:
     pool = get_db_pool()
     result = await pool.execute("DELETE FROM talleres WHERE id = $1", taller_id)
